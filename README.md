@@ -1,2 +1,174 @@
 # Daily-Tracker
 31 days tracker
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Daily Life Tracker</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+  padding: 20px;
+}
+h1, h2 { text-align: center; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 15px;
+}
+th, td {
+  border: 1px solid #334155;
+  padding: 6px;
+  text-align: center;
+}
+th { background: #1e293b; }
+input {
+  background: #020617;
+  color: #e5e7eb;
+  border: 1px solid #334155;
+  padding: 3px;
+}
+input[type="number"] { width: 70px; }
+input[type="checkbox"] { transform: scale(1.2); }
+.summary {
+  text-align: center;
+  font-size: 18px;
+}
+button {
+  padding: 6px 12px;
+  background: #2563eb;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📊 Daily Life Tracker</h1>
+
+<h2>Daily Tracker (31 Days)</h2>
+<table>
+<tr>
+  <th>Day</th>
+  <th>Problems</th>
+  <th>Topics</th>
+  <th>Smoke</th>
+  <th>No Porn</th>
+  <th>Spend</th>
+</tr>
+<tbody id="dailyBody"></tbody>
+</table>
+
+<div class="summary">
+Average Spend: <span id="avgSpend">0</span>
+</div>
+
+<hr>
+
+<h2>💰 Emergency Savings</h2>
+
+Initial Savings:
+<input type="number" id="initialSavings"><br><br>
+
+<table>
+<tr>
+  <th>Date</th>
+  <th>Type (Add/Take)</th>
+  <th>Amount</th>
+  <th>Note</th>
+</tr>
+<tbody id="emergencyBody"></tbody>
+</table>
+
+<button onclick="addEmergencyRow()">Add Entry</button>
+
+<div class="summary">
+Current Savings: <span id="currentSavings">0</span>
+</div>
+
+<script>
+const DAYS = 31;
+
+// ---------- CREATE DAILY ROWS ----------
+const dailyBody = document.getElementById("dailyBody");
+for (let i = 1; i <= DAYS; i++) {
+  dailyBody.innerHTML += `
+  <tr>
+    <td>${i}</td>
+    <td><input type="number" data-key="p${i}"></td>
+    <td><input type="number" data-key="t${i}"></td>
+    <td><input type="number" data-key="s${i}"></td>
+    <td><input type="checkbox" data-key="n${i}"></td>
+    <td><input type="number" data-key="e${i}"></td>
+  </tr>`;
+}
+
+// ---------- LOAD DATA ----------
+document.querySelectorAll("input").forEach(inp => {
+  const key = inp.dataset.key || inp.id;
+  if (!key) return;
+  const val = localStorage.getItem(key);
+  if (inp.type === "checkbox") inp.checked = val === "true";
+  else if (val !== null) inp.value = val;
+});
+
+// ---------- SAVE ON CHANGE ----------
+document.addEventListener("input", e => {
+  if (!e.target.dataset.key && !e.target.id) return;
+  const key = e.target.dataset.key || e.target.id;
+  localStorage.setItem(key,
+    e.target.type === "checkbox" ? e.target.checked : e.target.value
+  );
+  calculate();
+});
+
+// ---------- EMERGENCY ROW ----------
+function addEmergencyRow() {
+  const rowId = Date.now();
+  const body = document.getElementById("emergencyBody");
+  body.innerHTML += `
+  <tr>
+    <td><input data-key="d${rowId}"></td>
+    <td><input data-key="ty${rowId}"></td>
+    <td><input type="number" data-key="a${rowId}"></td>
+    <td><input data-key="n${rowId}"></td>
+  </tr>`;
+}
+
+// ---------- CALCULATIONS ----------
+function calculate() {
+  let total = 0, count = 0;
+  for (let i = 1; i <= DAYS; i++) {
+    let v = Number(localStorage.getItem(`e${i}`));
+    if (v) { total += v; count++; }
+  }
+  document.getElementById("avgSpend").innerText =
+    count ? (total / count).toFixed(2) : 0;
+
+  let init = Number(localStorage.getItem("initialSavings")) || 0;
+  let bal = init;
+
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith("ty")) {
+      const id = k.replace("ty", "");
+      const type = localStorage.getItem(`ty${id}`)?.toLowerCase();
+      const amt = Number(localStorage.getItem(`a${id}`));
+      if (!amt) return;
+      if (type === "add") bal += amt;
+      if (type === "take") bal -= amt;
+    }
+  });
+
+  document.getElementById("currentSavings").innerText = bal;
+}
+
+calculate();
+</script>
+
+</body>
+</html>
